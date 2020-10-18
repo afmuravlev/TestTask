@@ -60,7 +60,7 @@ LoadFileFormAsset::register($this);
 				'attribute' => 'status',
 				'label' => 'Статус',
 				'value' => function (array $apartment) {
-					return $apartment['status'] ? "Продана" : "Продается";
+					return $apartment['status'] ? "Не продана" : "Продана";
 				}
 			],
 		],
