@@ -7,6 +7,7 @@ use yii\web\Controller;
 use app\models\UploadForm;
 use yii\data\ArrayDataProvider;
 use yii\web\UploadedFile;
+use app\models\Apartment;
 
 class ApartmentController extends Controller
 {
@@ -30,10 +31,13 @@ class ApartmentController extends Controller
 					$parseError = true;
 				}
 
-
 				if ($parseError) {
 					Yii::$app->session->setFlash('error', "Возникла ошибка при обработке загруженного файла.");
 				} else if (count($appartments)) {
+					Yii::$app->db->createCommand()
+						->batchInsert(Apartment::tableName(), array_keys($appartments[0]), $appartments)
+						->execute();
+
 					Yii::$app->session->set('appartments', $appartments);
 					Yii::$app->session->setFlash('success', "Файл загружен.");
 				} else {
