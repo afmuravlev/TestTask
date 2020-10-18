@@ -17,6 +17,7 @@ class ApartmentController extends Controller
 
 		if (Yii::$app->request->isPost) {
 			$model->file = UploadedFile::getInstance($model, 'file');
+			Yii::$app->session->remove('appartments');
 
 			if (!$model->validate() && array_key_exists('file', $model->errors)) {
 				Yii::$app->session->setFlash('error', implode("<br>", $model->errors['file']));
@@ -33,11 +34,18 @@ class ApartmentController extends Controller
 				if ($parseError) {
 					Yii::$app->session->setFlash('error', "Возникла ошибка при обработке загруженного файла.");
 				} else if (count($appartments)) {
+					Yii::$app->session->set('appartments', $appartments);
 					Yii::$app->session->setFlash('success', "Файл загружен.");
 				} else {
 					Yii::$app->session->setFlash('error', "В загруженном файле отсутсвуют данные по квартирам в " . UploadForm::SECTION ." подъезде.");
 				}
 			}
+		}
+
+		if (Yii::$app->session->has('appartments')) {
+			$appartments = Yii::$app->session->get('appartments');
+		} else {
+			$appartments = [];
 		}
 
 		$provider = new ArrayDataProvider([
