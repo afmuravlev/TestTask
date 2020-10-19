@@ -8,17 +8,18 @@ use app\models\UploadForm;
 use yii\data\ArrayDataProvider;
 use yii\web\UploadedFile;
 use app\models\Apartment;
+use yii\helpers\ArrayHelper;
 
 class ApartmentController extends Controller
 {
     public function actionIndex()
     {
 		$model = new UploadForm();
-		$appartments = [];
+		$apartments = [];
 
 		if (Yii::$app->request->isPost) {
 			$model->file = UploadedFile::getInstance($model, 'file');
-			Yii::$app->session->remove('appartments');
+			Yii::$app->session->remove('apartments');
 
 			if (!$model->validate() && array_key_exists('file', $model->errors)) {
 				Yii::$app->session->setFlash('error', implode("<br>", $model->errors['file']));
@@ -26,34 +27,41 @@ class ApartmentController extends Controller
 				$parseError = false;
 
 				try {
-					$appartments = $model->parse();
+					$apartments = $model->parse();
 				} catch(\Exception $e) {
 					$parseError = true;
 				}
 
 				if ($parseError) {
 					Yii::$app->session->setFlash('error', "Возникла ошибка при обработке загруженного файла.");
-				} else if (count($appartments)) {
-					Yii::$app->db->createCommand()
-						->batchInsert(Apartment::tableName(), array_keys($appartments[0]), $appartments)
-						->execute();
+				} else if (count($apartments)) {
+					Apartment::insertOrUpdate($apartments);
 
-					Yii::$app->session->set('appartments', $appartments);
-					Yii::$app->session->setFlash('success', "Файл загружен.");
+					Yii::$app->session->set('apartments', $apartments);
+
+					$message = "Данные по квартирам в " . UploadForm::SECTION;
+					if (Apartment::$insertedApartmentsCount > 0 || Apartment::$updatedApartmentsCount > 0) {
+						$message .= " подъезде были сохранены: " . Apartment::$insertedApartmentsCount . " добавлено, " . Apartment::$updatedApartmentsCount . " обновлено.";
+						Yii::$app->session->setFlash('success', $message);
+					} else {
+						$message .= " подъезде не изменены, так как они уже в актуальном состоянии.";
+						Yii::$app->session->setFlash('success', $message);
+					}
+
 				} else {
 					Yii::$app->session->setFlash('error', "В загруженном файле отсутсвуют данные по квартирам в " . UploadForm::SECTION ." подъезде.");
 				}
 			}
 		}
 
-		if (Yii::$app->session->has('appartments')) {
-			$appartments = Yii::$app->session->get('appartments');
+		if (Yii::$app->session->has('apartments')) {
+			$apartments = Yii::$app->session->get('apartments');
 		} else {
-			$appartments = [];
+			$apartments = [];
 		}
 
 		$provider = new ArrayDataProvider([
-			'allModels' => $appartments,
+			'allModels' => $apartments,
 			'pagination' => [
 				'pageSize' => 15,
 			],
@@ -68,5 +76,4 @@ class ApartmentController extends Controller
 			'provider' => $provider
 		]);
     }
-
 }
